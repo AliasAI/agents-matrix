@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Deploy agents-matrix to a server via Docker Compose.
+# Deploy agents-matrix (Cast Transaction Agent) via Docker Compose.
 # Usage: ./scripts/deploy.sh [--build]
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -15,7 +15,7 @@ fi
 set -a; source .env; set +a
 
 # Validate required vars
-for var in AM_LLM_API_KEY AM_LIBRARY_PATH; do
+for var in AM_LLM_API_KEY AM_DEFAULT_RPC_URL; do
   if [ -z "${!var:-}" ]; then
     echo "ERROR: $var is not set in .env"
     exit 1
@@ -26,15 +26,15 @@ if [ -z "${AM_WALLET_ADDRESS:-}" ]; then
   echo "NOTICE: AM_WALLET_ADDRESS not set — x402 payment gate disabled"
 fi
 
-# ── Copy cli-anything-calibre for Docker build context ──
-HARNESS_SRC="../../calibre/agent-harness"
-HARNESS_DST="./calibre-harness"
+# ── Copy cli-anything-cast for Docker build context ──
+HARNESS_SRC="../../CLI-Anything/cast/agent-harness"
+HARNESS_DST="./cast-harness"
 if [ -d "$HARNESS_SRC" ]; then
-  echo "Copying cli-anything-calibre into build context..."
+  echo "Copying cli-anything-cast into build context..."
   rm -rf "$HARNESS_DST"
   cp -r "$HARNESS_SRC" "$HARNESS_DST"
 else
-  echo "ERROR: cli-anything-calibre not found at $HARNESS_SRC"
+  echo "ERROR: cli-anything-cast not found at $HARNESS_SRC"
   exit 1
 fi
 

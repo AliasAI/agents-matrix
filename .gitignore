@@ -21,7 +21,7 @@ logs/
 *.tmp
 
 # Docker build artifacts
-calibre-harness/
+cast-harness/
 
 # IDE
 .idea/

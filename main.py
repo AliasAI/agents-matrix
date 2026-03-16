@@ -1,4 +1,4 @@
-"""Calibre A2A Agent Service — entry point."""
+"""Cast Transaction A2A Agent Service — entry point."""
 
 from __future__ import annotations
 

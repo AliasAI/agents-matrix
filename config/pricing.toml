@@ -4,11 +4,9 @@
 default = "$0.01"
 
 [skills]
-convert        = "$0.05"
-metadata_read  = "$0.01"
-metadata_write = "$0.02"
-metadata_fetch = "$0.03"
-polish         = "$0.05"
-library_search = "$0.01"
-library_add    = "$0.03"
-library_export = "$0.03"
+tx_decode       = "$0.02"
+receipt_parse   = "$0.02"
+trace           = "$0.05"
+calldata_decode = "$0.01"
+log_query       = "$0.03"
+block_info      = "$0.01"

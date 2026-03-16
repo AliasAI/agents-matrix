@@ -1,4 +1,4 @@
-"""A2A AgentExecutor that delegates to the Claude agentic loop + MCP tools."""
+"""A2A AgentExecutor that delegates to the LLM agentic loop + MCP tools."""
 
 from __future__ import annotations
 
@@ -17,8 +17,8 @@ from config.settings import Settings
 logger = logging.getLogger(__name__)
 
 
-class CalibreExecutor(AgentExecutor):
-    """Execute Calibre tasks via Claude agentic loop backed by MCP tools."""
+class CastExecutor(AgentExecutor):
+    """Execute Cast transaction analysis tasks via LLM loop backed by MCP tools."""
 
     def __init__(self, settings: Settings) -> None:
         self._settings = settings

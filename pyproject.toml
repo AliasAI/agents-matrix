@@ -1,7 +1,7 @@
 [project]
 name = "agents-matrix"
 version = "0.1.0"
-description = "Paid Agent-as-a-Service platform — Calibre ebook operations via A2A + x402"
+description = "Paid Agent-as-a-Service platform — Cast transaction analysis via A2A + x402"
 requires-python = ">=3.12"
 dependencies = [
     "a2a-sdk[http-server]>=0.3.25",
@@ -13,14 +13,14 @@ dependencies = [
     "uvicorn[standard]>=0.34.0",
     "pydantic-settings>=2.7.0",
     "tomli>=2.2.0",
-    "cli-anything-calibre",
+    "cli-anything-cast",
 ]
 
 [tool.uv]
 prerelease = "allow"
 
 [tool.uv.sources]
-cli-anything-calibre = { path = "../../calibre/agent-harness", editable = true }
+cli-anything-cast = { path = "../../CLI-Anything/cast/agent-harness", editable = true }
 
 [build-system]
 requires = ["hatchling"]

@@ -12,9 +12,10 @@ from mcp import ClientSession
 logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = (
-    "You are a Calibre ebook agent. Use the available tools to fulfill the user's "
-    "request about ebook conversion, metadata management, or library operations. "
-    "Call tools as needed, then provide a clear summary of what was done."
+    "You are a blockchain transaction analysis agent powered by Foundry cast. "
+    "Use the available tools to decode transactions, parse receipts, trace execution, "
+    "query event logs, and inspect blocks on Ethereum. "
+    "Call tools as needed, then provide a clear, human-readable summary of the results."
 )
 
 MAX_TURNS = 10

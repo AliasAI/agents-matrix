@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 def register() -> None:
-    """Register the Calibre agent on-chain (ERC-721 mint + IPFS metadata)."""
+    """Register the Cast Transaction agent on-chain (ERC-721 mint + IPFS metadata)."""
     settings = get_settings()
 
     if not settings.private_key:
@@ -35,11 +35,11 @@ def register() -> None:
     )
 
     agent = sdk.createAgent(
-        name="Calibre Agent",
+        name="Cast Transaction Agent",
         description=(
-            "Paid AI agent for Calibre ebook operations — format conversion, "
-            "metadata management, library search, and more. "
-            "Accepts USDC payment via x402 protocol."
+            "Paid AI agent for Ethereum transaction analysis — decode transactions, "
+            "parse receipts, trace execution, query logs, and inspect blocks. "
+            "Powered by Foundry cast. Accepts USDC payment via x402 protocol."
         ),
     )
 
@@ -49,7 +49,7 @@ def register() -> None:
 
     # OASF skills and domains
     agent.addSkill("data_engineering/data_transformation_pipeline", validate_oasf=True)
-    agent.addDomain("technology/data_science/data_visualization", validate_oasf=True)
+    agent.addDomain("technology/blockchain", validate_oasf=True)
 
     # Payment support
     agent.setX402Support(True)

@@ -17,9 +17,8 @@ class Settings(BaseSettings):
     port: int = 9000
     base_url: str = "http://localhost:9000"
 
-    # ── Calibre ──
-    library_path: str = ""
-    temp_dir: str = "/tmp/agents-matrix"
+    # ── Cast (Foundry) ──
+    default_rpc_url: str = ""
 
     # ── x402 Payment ──
     wallet_address: str = ""

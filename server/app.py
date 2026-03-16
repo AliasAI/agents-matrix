@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 
-from fastapi import FastAPI, UploadFile, File
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi import FastAPI
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
@@ -15,22 +13,18 @@ from x402.http.middleware.fastapi import PaymentMiddlewareASGI
 from config.settings import Settings, Pricing
 from server.agent_card import build_agent_card
 from server.payment import build_resource_server, build_route_config
-from executor.calibre_executor import CalibreExecutor
-from executor.file_handler import FileHandler
+from executor.cast_executor import CastExecutor
 
 logger = logging.getLogger(__name__)
 
 
 def create_app(settings: Settings, pricing: Pricing) -> FastAPI:
     """Build the full application stack."""
-    app = FastAPI(title="Calibre Agent", version="0.1.0")
-
-    # ── File handler (upload/download endpoints) ──
-    file_handler = FileHandler(temp_dir=Path(settings.temp_dir))
+    app = FastAPI(title="Cast Transaction Agent", version="0.1.0")
 
     # ── A2A agent ──
     agent_card = build_agent_card()
-    executor = CalibreExecutor(settings=settings)
+    executor = CastExecutor(settings=settings)
     request_handler = DefaultRequestHandler(
         agent_executor=executor,
         task_store=InMemoryTaskStore(),
@@ -53,17 +47,6 @@ def create_app(settings: Settings, pricing: Pricing) -> FastAPI:
     # ── Utility endpoints ──
     @app.get("/health")
     async def health() -> dict[str, str]:
-        return {"status": "ok", "service": "calibre-agent"}
-
-    @app.post("/files/upload")
-    async def upload_file(file: UploadFile = File(...)) -> JSONResponse:
-        content = await file.read()
-        file_id = file_handler.store_upload(content, file.filename or "upload")
-        return JSONResponse({"file_id": file_id})
-
-    @app.get("/files/{file_id}")
-    async def download_file(file_id: str) -> FileResponse:
-        path = file_handler.resolve(file_id)
-        return FileResponse(path, filename=path.name)
+        return {"status": "ok", "service": "cast-transaction-agent"}
 
     return app

@@ -60,7 +60,7 @@ source = { editable = "." }
 dependencies = [
     { name = "a2a-sdk", extra = ["http-server"] },
     { name = "agent0-sdk" },
-    { name = "cli-anything-calibre" },
+    { name = "cli-anything-cast" },
     { name = "fastapi" },
     { name = "mcp", extra = ["cli"] },
     { name = "openai" },
@@ -74,7 +74,7 @@ dependencies = [
 requires-dist = [
     { name = "a2a-sdk", extras = ["http-server"], specifier = ">=0.3.25" },
     { name = "agent0-sdk", specifier = ">=1.6.0" },
-    { name = "cli-anything-calibre", editable = "../../calibre/agent-harness" },
+    { name = "cli-anything-cast", editable = "../../CLI-Anything/cast/agent-harness" },
     { name = "fastapi", specifier = ">=0.115.0" },
     { name = "mcp", extras = ["cli"], specifier = ">=1.26.0" },
     { name = "openai", specifier = ">=1.30.0" },
@@ -550,9 +550,9 @@ wheels = [
 ]
 
 [[package]]
-name = "cli-anything-calibre"
+name = "cli-anything-cast"
 version = "1.0.0"
-source = { editable = "../../calibre/agent-harness" }
+source = { editable = "../../CLI-Anything/cast/agent-harness" }
 dependencies = [
     { name = "click" },
     { name = "prompt-toolkit" },

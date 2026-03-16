@@ -1,4 +1,4 @@
-"""Build the A2A AgentCard with Calibre skill definitions."""
+"""Build the A2A AgentCard with Cast transaction analysis skill definitions."""
 
 from __future__ import annotations
 
@@ -9,83 +9,63 @@ from config.settings import get_settings
 
 SKILLS: list[AgentSkill] = [
     AgentSkill(
-        id="convert",
-        name="Convert Ebook",
-        description="Convert an ebook between formats (EPUB, PDF, MOBI, AZW3, etc.)",
-        tags=["convert", "ebook", "format"],
+        id="tx_decode",
+        name="Decode Transaction",
+        description="Fetch and decode a transaction by hash — shows from, to, value, gas, and input data.",
+        tags=["transaction", "decode", "ethereum", "web3"],
         examples=[
-            "Convert this EPUB to PDF",
-            "Transform my book to AZW3 for Kindle",
+            "Decode transaction 0xabc123...",
+            "What did this transaction do?",
         ],
     ),
     AgentSkill(
-        id="metadata_read",
-        name="Read Metadata",
-        description="Read metadata (title, author, tags, etc.) from an ebook file.",
-        tags=["metadata", "read", "ebook"],
+        id="receipt_parse",
+        name="Parse Receipt",
+        description="Get transaction receipt with status, gas usage analysis, and emitted event logs.",
+        tags=["receipt", "gas", "logs", "ethereum"],
         examples=[
-            "What metadata does this EPUB have?",
-            "Show me the author and title of this book",
+            "Show me the receipt for tx 0xabc123...",
+            "How much gas did this transaction use?",
         ],
     ),
     AgentSkill(
-        id="metadata_write",
-        name="Write Metadata",
-        description="Update metadata fields on an ebook file.",
-        tags=["metadata", "write", "edit", "ebook"],
+        id="trace",
+        name="Trace Transaction",
+        description="Trace the full execution of a transaction showing internal calls and state changes.",
+        tags=["trace", "debug", "execution", "ethereum"],
         examples=[
-            "Set the author to Isaac Asimov",
-            "Change the title to Foundation",
+            "Trace the execution of tx 0xabc123...",
+            "Show internal calls for this transaction",
         ],
     ),
     AgentSkill(
-        id="metadata_fetch",
-        name="Fetch Metadata",
-        description="Fetch metadata from online sources by title, author, or ISBN.",
-        tags=["metadata", "fetch", "lookup", "isbn"],
+        id="calldata_decode",
+        name="Decode Calldata",
+        description="Decode hex-encoded calldata using the 4byte signature database (no RPC needed).",
+        tags=["calldata", "decode", "4byte", "selector"],
         examples=[
-            "Look up metadata for ISBN 978-0553293357",
-            "Fetch book info for Foundation by Asimov",
+            "Decode this calldata: 0xa9059cbb...",
+            "What function does selector 0xa9059cbb call?",
         ],
     ),
     AgentSkill(
-        id="polish",
-        name="Polish Ebook",
-        description="Polish/optimize an EPUB or AZW3 file (embed fonts, compress images, etc.).",
-        tags=["polish", "optimize", "epub"],
+        id="log_query",
+        name="Query Logs",
+        description="Query event logs from a contract address with optional topic and block range filters.",
+        tags=["logs", "events", "contract", "ethereum"],
         examples=[
-            "Polish this EPUB and embed fonts",
-            "Optimize my ebook file",
+            "Show Transfer events from USDC contract",
+            "Query logs from 0x1234... in the last 100 blocks",
         ],
     ),
     AgentSkill(
-        id="library_search",
-        name="Search Library",
-        description="Search the Calibre library by title, author, tags, or free-text query.",
-        tags=["library", "search", "catalog"],
+        id="block_info",
+        name="Block Info",
+        description="Get block details by number, hash, or tag (latest, earliest, etc.).",
+        tags=["block", "chain", "ethereum"],
         examples=[
-            "Find all books by Terry Pratchett",
-            "Search for books tagged 'science-fiction'",
-        ],
-    ),
-    AgentSkill(
-        id="library_add",
-        name="Add to Library",
-        description="Add one or more ebook files to the Calibre library.",
-        tags=["library", "add", "import"],
-        examples=[
-            "Add this EPUB to my library",
-            "Import these books into Calibre",
-        ],
-    ),
-    AgentSkill(
-        id="library_export",
-        name="Export from Library",
-        description="Export books from the Calibre library by ID, optionally in specific formats.",
-        tags=["library", "export", "download"],
-        examples=[
-            "Export book #42 as EPUB",
-            "Download books 1-5 from the library",
+            "Show me the latest block",
+            "Get info for block 18000000",
         ],
     ),
 ]
@@ -94,16 +74,16 @@ SKILLS: list[AgentSkill] = [
 def build_agent_card() -> AgentCard:
     settings = get_settings()
     return AgentCard(
-        name="Calibre Agent",
+        name="Cast Transaction Agent",
         description=(
-            "Paid AI agent for Calibre ebook operations — format conversion, "
-            "metadata management, library search, and more. "
-            "Accepts USDC payment via x402 protocol."
+            "Paid AI agent for Ethereum transaction analysis — decode transactions, "
+            "parse receipts, trace execution, query logs, and inspect blocks. "
+            "Powered by Foundry cast. Accepts USDC payment via x402 protocol."
         ),
         url=settings.base_url + "/",
         version="0.1.0",
-        defaultInputModes=["text", "file"],
-        defaultOutputModes=["text", "file"],
+        defaultInputModes=["text"],
+        defaultOutputModes=["text"],
         capabilities=AgentCapabilities(streaming=False, pushNotifications=False),
         skills=SKILLS,
     )

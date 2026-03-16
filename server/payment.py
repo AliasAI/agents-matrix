@@ -37,6 +37,6 @@ def build_route_config(settings: Settings, pricing: Pricing) -> dict[str, RouteC
                 ),
             ],
             mime_type="application/json",
-            description="A2A task execution — Calibre ebook operations",
+            description="A2A task execution — Cast transaction analysis",
         ),
     }
