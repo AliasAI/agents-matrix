@@ -69,6 +69,10 @@ def register(
     agent.addSkill(skill, validate_oasf=False)
     agent.addDomain(domain, validate_oasf=False)
 
+    # Payment support — setX402Support is metadata (before registration)
+    # setWallet requires agentId so must come after registerIPFS()
+    agent.setX402Support(True)
+
     # Trust model
     agent.setTrust(reputation=True)
     agent.setActive(True)
@@ -95,10 +99,9 @@ def register(
     logger.info("  Agent ID:  %s", reg.agentId)
     logger.info("  Agent URI: %s", reg.agentURI)
 
-    # Payment support — must be set after registration (requires agentId)
+    # setWallet must be called after registration (requires agentId)
     # wallet chain may differ from registration chain
     # (e.g. register on BSC but accept x402 payments on Base)
-    agent.setX402Support(True)
     if settings.wallet_address:
         # AM_CHAIN_NETWORK format: "eip155:<chain_id>" (x402 payment chain)
         try:
