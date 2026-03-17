@@ -11,7 +11,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="AM_", env_file=".env")
+    model_config = SettingsConfigDict(env_prefix="AM_", env_file=".env", extra="ignore")
 
     # ── Server ──
     host: str = "0.0.0.0"
