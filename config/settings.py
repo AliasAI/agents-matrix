@@ -45,6 +45,7 @@ class ChainInfo:
     chain_id: int
     explorer: str
     symbol: str
+    testnet: bool = False
 
 
 class ChainRegistry:
@@ -67,6 +68,7 @@ class ChainRegistry:
                 chain_id=meta["chain_id"],
                 explorer=meta["explorer"],
                 symbol=meta["symbol"],
+                testnet=meta.get("testnet", False),
             )
 
     def resolve_rpc(self, chain: str | None = None) -> str:
@@ -97,6 +99,7 @@ class ChainRegistry:
                 "chain_id": info.chain_id,
                 "explorer": info.explorer,
                 "symbol": info.symbol,
+                "testnet": info.testnet,
                 "configured": bool(os.environ.get(env_key)),
             })
         return result

@@ -11,20 +11,26 @@ cd "$(dirname "$0")/.."
 if [ ! -f .env ]; then
   echo "ERROR: .env file not found. Create one:"
   echo "  cp .env.example .env"
-  echo "  # Then set AM_LLM_API_KEY and AM_RPC_ETHEREUM (+ other chains)"
+  echo "  # Then set AM_LLM_API_KEY and AM_RPC_<CHAIN> for your default chain"
   exit 1
 fi
 
 # Source .env for local variable access
 set -a; source .env; set +a
 
-# Validate required vars
-for var in AM_LLM_API_KEY AM_RPC_ETHEREUM; do
-  if [ -z "${!var:-}" ]; then
-    echo "ERROR: $var is not set in .env"
-    exit 1
-  fi
-done
+# Validate LLM key
+if [ -z "${AM_LLM_API_KEY:-}" ]; then
+  echo "ERROR: AM_LLM_API_KEY is not set in .env"
+  exit 1
+fi
+
+# Validate default chain has RPC configured
+DEFAULT_CHAIN="${AM_DEFAULT_CHAIN:-base_sepolia}"
+RPC_VAR="AM_RPC_$(echo "$DEFAULT_CHAIN" | tr '[:lower:]' '[:upper:]')"
+if [ -z "${!RPC_VAR:-}" ]; then
+  echo "ERROR: $RPC_VAR is not set in .env (required for default chain '$DEFAULT_CHAIN')"
+  exit 1
+fi
 
 if [ -z "${AM_WALLET_ADDRESS:-}" ]; then
   echo "NOTICE: AM_WALLET_ADDRESS not set — x402 payment gate disabled"

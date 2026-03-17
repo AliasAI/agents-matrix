@@ -1,4 +1,11 @@
-default = "ethereum"
+default = "base_sepolia"
+
+[chains.base_sepolia]
+name = "Base Sepolia"
+chain_id = 84532
+explorer = "https://sepolia.basescan.org"
+symbol = "ETH"
+testnet = true
 
 [chains.ethereum]
 name = "Ethereum"
