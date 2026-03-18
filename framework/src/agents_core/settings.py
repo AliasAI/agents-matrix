@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     wallet_address: str = ""
     facilitator_url: str = "https://x402.org/facilitator"
     chain_network: str = "eip155:84532"
+    cdp_key_id: str = ""
+    cdp_private_key: str = ""
 
     # -- ERC-8004 Registration --
     private_key: str = ""

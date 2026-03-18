@@ -195,7 +195,7 @@ To expose the agent at a path prefix (e.g. `https://aliasai.io/cast/`), add a lo
 location = /cast {
     return 301 /cast/;
 }
-location /cast/ {
+location ^~ /cast/ {
     rewrite ^/cast/(.*) /$1 break;
     proxy_pass http://localhost:9000;
     proxy_http_version 1.1;
@@ -236,6 +236,8 @@ curl -s https://aliasai.io/cast/.well-known/agent-card.json | python3 -m json.to
 | Container exits: `AgentCard has no "url" field` | `a2a-sdk 1.0.0` removed `url` from AgentCard | Use `supported_interfaces=[AgentInterface(url=...)]` instead |
 | `register.sh` fails: `Distribution not found at: file:///home/CLI-Anything/...` | Local harness path doesn't exist on server | Run registration inside Docker container (see Level 5 above) |
 | `AuthenticationError` | Bad API key | Verify `AM_LLM_API_KEY` in `.env` |
+| `500` on `POST /` with `Facilitator get_supported failed (401)` | CDP JWT auth wrong — ES256 or wrong claims | CDP keys use **EdDSA** (Ed25519), `uri` (singular string), `aud: ["cdp_service"]`; see `payment.py` |
+| `403` on `/.well-known/agent-card.json` via nginx | `location ~ /\.` deny rule intercepts path | Use `location ^~ /cast/` (with `^~`) to take priority over regex rules |
 | `502` from reverse proxy | App not ready | Wait for healthcheck; `docker compose logs -f` |
 | `402` on every request | Payment gate active | Unset `AM_WALLET_ADDRESS` for testing |
 | RPC errors | Bad RPC URL | Test with `curl -X POST <rpc_url> -d '{"jsonrpc":"2.0","method":"eth_blockNumber","id":1}'` |
