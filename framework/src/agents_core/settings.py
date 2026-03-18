@@ -72,7 +72,10 @@ class ChainRegistry:
             )
 
     def resolve_rpc(self, chain: str | None = None) -> str:
-        """Resolve a chain slug to its RPC URL from AM_RPC_{CHAIN} env var."""
+        """Resolve a chain slug to its RPC URL.
+
+        Resolution order: AM_RPC_{CHAIN} → AM_RPC (universal fallback).
+        """
         slug = chain or self._default_chain
         if slug not in self._chains:
             raise ValueError(
@@ -80,19 +83,23 @@ class ChainRegistry:
                 f"Available: {', '.join(sorted(self._chains))}"
             )
         env_key = f"AM_RPC_{slug.upper()}"
-        rpc_url = os.environ.get(env_key, "")
+        rpc_url = os.environ.get(env_key) or os.environ.get("AM_RPC", "")
         if not rpc_url:
             raise ValueError(
                 f"No RPC URL configured for chain '{slug}'. "
-                f"Set {env_key} in your .env file."
+                f"Set AM_RPC (universal) or {env_key} in your .env file."
             )
         return rpc_url
+
+    def _is_chain_configured(self, slug: str) -> bool:
+        """Check if a chain has an RPC URL available."""
+        env_key = f"AM_RPC_{slug.upper()}"
+        return bool(os.environ.get(env_key) or os.environ.get("AM_RPC"))
 
     def list_chains(self) -> list[dict]:
         """Return all chains, marking which have RPC URLs configured."""
         result = []
         for slug, info in sorted(self._chains.items()):
-            env_key = f"AM_RPC_{slug.upper()}"
             result.append({
                 "chain": slug,
                 "name": info.name,
@@ -100,7 +107,7 @@ class ChainRegistry:
                 "explorer": info.explorer,
                 "symbol": info.symbol,
                 "testnet": info.testnet,
-                "configured": bool(os.environ.get(env_key)),
+                "configured": self._is_chain_configured(slug),
                 "default": slug == self._default_chain,
             })
         return result
