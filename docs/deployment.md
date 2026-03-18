@@ -117,16 +117,28 @@ curl -s -X POST http://localhost:9000/ \
   -H "Content-Type: application/json" \
   -d '{
     "jsonrpc": "2.0",
-    "method": "tasks/send",
+    "method": "SendMessage",
     "id": "test-1",
     "params": {
       "message": {
-        "role": "user",
-        "parts": [{"kind": "text", "text": "Show me the latest Ethereum block"}]
+        "role": "ROLE_USER",
+        "parts": [{"text": "Show me the latest Ethereum block"}]
       }
     }
   }' | python3 -m json.tool
 ```
+
+> **Protocol versions** (both work, `enable_v0_3_compat=True` is on by default):
+>
+> | | v0.3 (legacy) | v1.0 (current) |
+> |---|---|---|
+> | Method | `message/send` | `SendMessage` |
+> | Role | `"user"` | `"ROLE_USER"` |
+> | Part | `{"kind": "text", "text": "..."}` | `{"text": "..."}` |
+> | messageId | required | not needed |
+> | Result | `result.kind == "message"` | `result.message` |
+>
+> Note: `tasks/send` does not exist in any version. The correct v0.3 method is `message/send`.
 
 Expected: task artifact with block details.
 
@@ -143,10 +155,71 @@ curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:9000/ \
 
 ### Level 5: On-Chain Registration
 
+`register.sh` uses `uv run` from the workspace root — this requires the CLI-Anything harness to be present locally. On production servers the harness path doesn't exist, so **run registration inside the Docker container instead**:
+
 ```bash
-# Set AM_PRIVATE_KEY, AM_RPC_URL, AM_PINATA_JWT in .env
-cd agents/cast
-./scripts/register.sh
+# Works on any server (no local uv/harness required)
+docker exec cast-cast-agent-1 /app/.venv/bin/python -c "
+from agents_core.settings import get_settings
+from agents_core.registration import register
+import logging
+logging.basicConfig(level=logging.INFO, format='%(levelname)s  %(message)s')
+register(
+    get_settings(),
+    name='Cast Transaction Agent',
+    description=(
+        'Paid AI agent for Ethereum transaction analysis — decode transactions, '
+        'parse receipts, trace execution, query logs, and inspect blocks. '
+        'Powered by Foundry cast. Accepts USDC payment via x402 protocol.'
+    ),
+)
+"
+```
+
+Requires `AM_PRIVATE_KEY`, `AM_RPC_URL`, and `AM_PINATA_JWT` set in `.env`.
+
+On success you'll see:
+```
+INFO  Agent registered!
+INFO    Agent ID:  <chain_id>:<id>
+INFO    Agent URI: ipfs://...
+```
+
+---
+
+## Nginx Reverse Proxy (Production)
+
+To expose the agent at a path prefix (e.g. `https://aliasai.io/cast/`), add a location block to your nginx server config:
+
+```nginx
+location = /cast {
+    return 301 /cast/;
+}
+location /cast/ {
+    rewrite ^/cast/(.*) /$1 break;
+    proxy_pass http://localhost:9000;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_connect_timeout 120s;
+    proxy_send_timeout 120s;
+    proxy_read_timeout 120s;
+}
+```
+
+Then update `.env`:
+```env
+AM_BASE_URL=https://aliasai.io/cast
+```
+
+The `rewrite` strips the `/cast/` prefix before proxying, so the app receives all paths relative to `/`.
+
+**Verify via nginx:**
+```bash
+curl -s https://aliasai.io/cast/health
+curl -s https://aliasai.io/cast/.well-known/agent-card.json | python3 -m json.tool
 ```
 
 ---
@@ -155,8 +228,13 @@ cd agents/cast
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
+| `deploy.sh` fails: `AM_RPC_BSC not set` | deploy.sh checks per-chain var only | Fixed in current version — checks `AM_RPC` universal fallback too |
 | Docker build fails at `foundryup` | Network issue | Retry, or check proxy settings |
 | Docker build fails at `git clone` | Can't reach GitHub | Check network; or use `--build-arg HARNESS_REPO=<mirror>` |
+| Container exits: `ImportError: Database models require SQLAlchemy` | `a2a-sdk>=1.0.0` needs SQLAlchemy | Use extra `a2a-sdk[http-server,sqlite]` in `framework/pyproject.toml` |
+| Container exits: `AgentCapabilities has no "pushNotifications" field` | `a2a-sdk 1.0.0` renamed field | Use `push_notifications=False` (snake_case) |
+| Container exits: `AgentCard has no "url" field` | `a2a-sdk 1.0.0` removed `url` from AgentCard | Use `supported_interfaces=[AgentInterface(url=...)]` instead |
+| `register.sh` fails: `Distribution not found at: file:///home/CLI-Anything/...` | Local harness path doesn't exist on server | Run registration inside Docker container (see Level 5 above) |
 | `AuthenticationError` | Bad API key | Verify `AM_LLM_API_KEY` in `.env` |
 | `502` from reverse proxy | App not ready | Wait for healthcheck; `docker compose logs -f` |
 | `402` on every request | Payment gate active | Unset `AM_WALLET_ADDRESS` for testing |

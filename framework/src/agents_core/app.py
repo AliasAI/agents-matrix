@@ -50,6 +50,7 @@ def create_app(
     a2a_app = A2AStarletteApplication(
         agent_card=agent_card,
         http_handler=request_handler,
+        enable_v0_3_compat=True,
     )
     a2a_app.add_routes_to_app(app)
 

@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Shared framework for agents-matrix: A2A + x402 + MCP agent executor"
 requires-python = ">=3.12"
 dependencies = [
-    "a2a-sdk[http-server]>=0.3.25",
+    "a2a-sdk[http-server,sqlite]>=0.3.25",
     "x402[fastapi,httpx,evm]>=2.3.0",
     "agent0-sdk>=1.6.0",
     "openai>=1.30.0",

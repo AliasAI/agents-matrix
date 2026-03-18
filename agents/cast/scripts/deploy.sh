@@ -24,11 +24,11 @@ if [ -z "${AM_LLM_API_KEY:-}" ]; then
   exit 1
 fi
 
-# Validate default chain has RPC configured
+# Validate default chain has RPC configured (per-chain var or universal AM_RPC fallback)
 DEFAULT_CHAIN="${AM_DEFAULT_CHAIN:-base_sepolia}"
 RPC_VAR="AM_RPC_$(echo "$DEFAULT_CHAIN" | tr '[:lower:]' '[:upper:]')"
-if [ -z "${!RPC_VAR:-}" ]; then
-  echo "ERROR: $RPC_VAR is not set in .env (required for default chain '$DEFAULT_CHAIN')"
+if [ -z "${!RPC_VAR:-}" ] && [ -z "${AM_RPC:-}" ]; then
+  echo "ERROR: Neither $RPC_VAR nor AM_RPC is set in .env (required for default chain '$DEFAULT_CHAIN')"
   exit 1
 fi
 
