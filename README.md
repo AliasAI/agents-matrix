@@ -1,34 +1,43 @@
 # Agents Matrix
 
-A monorepo platform for building **paid AI agents** — each wrapping a CLI tool as an Agent-as-a-Service via [A2A protocol](https://github.com/google/A2A) + [x402 payment](https://www.x402.org/).
+A quick-launch boilerplate for building **paid AI agents** with [A2A protocol](https://github.com/google/A2A) + [x402 payment](https://www.x402.org/) + [ERC-8004 registration](https://github.com/agent0-labs/agent0-sdk).
 
-Each agent is backed by a CLI harness from [CLI-Anything (HKUDS)](https://github.com/HKUDS/CLI-Anything) — a collection of agent-friendly CLI wrappers for real-world software tools. The harness outputs structured JSON, the agent wraps it as MCP tools, the framework exposes it as a paid A2A service.
+Write 4–5 files, get a paid A2A agent. The tool backend is pluggable — CLI-Anything harness, direct CLI subprocess, REST API, Python library — anything that produces structured output works.
 
 ```
-CLI-Anything harness        agents-matrix agent
-────────────────────        ──────────────────────────────────────
-cast/agent-harness     →    agents/cast/    EVM transaction analysis  (live)
-<tool>/agent-harness   →    agents/<tool>/  <description>             (next)
+Backend Type                  Agent Example
+──────────────────────        ──────────────────────────────────────
+CLI-Anything harness     →    agents/cast/      EVM tx analysis        (Foundry cast)
+CLI-Anything harness     →    agents/drawio/    Diagram creation       (draw.io)
+Direct CLI subprocess    →    agents/solana/    Solana blockchain      (solana CLI)
+Direct CLI subprocess    →    agents/sui/       Sui blockchain         (sui client)
 ```
 
 ## Architecture
 
 ```
 agents-matrix/
+  scripts/                      ← shared CLI scripts (auto-detect agent from CWD or $1)
+    run.sh                        run agent locally
+    deploy.sh                     deploy via Docker Compose
+    register.sh                   ERC-8004 on-chain registration
+    dev.sh                        launch MCP inspector
+    health.sh                     health check running agent
+    docker-gen.sh                 generate Dockerfile from template
+    new-agent.sh                  scaffold a new agent
   framework/                    ← agents-core: shared package for all agents
     src/agents_core/
-      app.py                      create_app() factory
+      app.py                      create_app() + run_agent() entry point
       executor.py                 MCPAgentExecutor (A2A → MCP bridge)
       loop.py                     LLM agentic loop (OpenAI-compatible)
       payment.py                  x402 middleware helpers
       registration.py             ERC-8004 on-chain registration
       settings.py                 Settings, ChainRegistry, Pricing
   agents/
-    cast/                       ← Cast Transaction Agent
-      agent_config.py             SYSTEM_PROMPT, skills, agent card
-      mcp_tools.py                9 MCP tools (cast-specific)
-      mcp_entry.py                MCP stdio entry point
-      main.py                     thin entry (~25 lines)
+    cast/                       ← CLI-Anything harness backend
+    drawio/                     ← CLI-Anything harness backend
+    solana/                     ← Direct CLI backend (solana binary)
+    sui/                        ← Direct CLI backend (sui binary)
   pyproject.toml                ← uv workspace
 ```
 
@@ -52,7 +61,7 @@ LLM Agent Loop ── tool-use with OpenAI-compatible API
 MCP Server ── @mcp.tool() functions
     │
     ▼
-CLI Harness ── subprocess calls to CLI binary
+Tool Backend ── CLI harness / direct CLI / API / library
 ```
 
 ## Quick Start
@@ -60,11 +69,10 @@ CLI Harness ── subprocess calls to CLI binary
 ### Docker (recommended)
 
 ```bash
-cd agents/cast
-cp .env.example .env
+cp agents/cast/.env.example agents/cast/.env
 # Edit .env: set AM_LLM_API_KEY and at least one AM_RPC_* URL
 
-./scripts/deploy.sh
+./scripts/deploy.sh cast
 ```
 
 No need to install Foundry, Python, or uv on the host — the Docker image handles everything.
@@ -72,19 +80,18 @@ No need to install Foundry, Python, or uv on the host — the Docker image handl
 ### Local Development
 
 ```bash
-# Prerequisites: Python 3.12+, uv, Foundry cast
-# Also need CLI-Anything repo cloned at ../../CLI-Anything
+# Prerequisites: Python 3.12+, uv
+# Agent-specific: Foundry cast, solana CLI, sui CLI, etc.
 
 # Install workspace
 uv sync --prerelease=allow --all-packages
 
 # Configure
-cd agents/cast
-cp .env.example .env
+cp agents/cast/.env.example agents/cast/.env
 # Edit .env
 
 # Run
-uv run python main.py
+./scripts/run.sh cast
 ```
 
 ### Verify
@@ -113,76 +120,56 @@ curl -X POST http://localhost:9000/ \
   }'
 ```
 
-## Cast Transaction Agent
+## Agents
 
-Multi-chain EVM transaction analysis powered by [Foundry cast](https://book.getfoundry.sh/cast/).
-
-### Skills
-
-| Skill | Description |
-|-------|-------------|
-| Decode Transaction | Fetch and decode a transaction by hash on any EVM chain |
-| Parse Receipt | Transaction receipt with status, gas usage, event logs |
-| Trace Transaction | Full execution trace with internal calls |
-| Decode Calldata | Decode hex calldata via 4byte signature database |
-| Query Logs | Event logs with topic and block range filters |
-| Block Info | Block details by number, hash, or tag |
-
-### MCP Tools
-
-| Tool | RPC | Chain param |
-|------|-----|-------------|
-| `list_supported_chains` | No | No |
-| `get_transaction` | Yes | Yes |
-| `get_receipt` | Yes | Yes |
-| `trace_transaction` | Yes | Yes |
-| `decode_calldata` | No | No |
-| `get_selector` | No | No |
-| `query_logs` | Yes | Yes |
-| `call_contract` | Yes | Yes |
-| `get_block` | Yes | Yes |
-
-### Supported Chains
-
-Ethereum, Arbitrum, Base, Polygon, Optimism, BSC, Avalanche, Linea, Scroll, zkSync, Blast.
-
-Chain metadata lives in `agents/cast/config/chains.toml`. RPC URLs are resolved from `AM_RPC_{CHAIN}` environment variables.
-
-### Use as Claude MCP Server
-
-```bash
-cd agents/cast
-claude mcp add cast -- uv run python -m mcp_entry
-```
+| Agent | Port | Backend | Description |
+|-------|------|---------|-------------|
+| [Cast](agents/cast/) | 9000 | CLI-Anything harness | Multi-chain EVM transaction analysis via Foundry cast |
+| [Draw.io](agents/drawio/) | 9001 | CLI-Anything harness | Diagram creation, editing, and export via draw.io |
+| [Solana](agents/solana/) | 9002 | Direct CLI | Solana blockchain queries via solana CLI |
+| [Sui](agents/sui/) | 9003 | Direct CLI | Sui blockchain queries via sui client CLI |
 
 ## Adding a New Agent
 
-The source of truth for CLI harnesses is [CLI-Anything (HKUDS)](https://github.com/HKUDS/CLI-Anything). Pick an existing harness (Blender, ComfyUI, Audacity, LibreOffice, etc.) or write a new one following the same pattern — any CLI framework works as long as it supports `--json` structured output.
+### Scaffolding (recommended)
 
-1. Get or write a CLI harness (`<tool>/agent-harness/`) in the CLI-Anything repo
-2. Create `agents/<name>/` with:
+```bash
+./scripts/new-agent.sh weather --port 9010
+# Then edit agent_config.py and mcp_tools.py
+uv sync --prerelease=allow --all-packages
+```
+
+### Manual
+
+Create `agents/<name>/` with:
 
 | File | Purpose |
 |------|---------|
 | `agent_config.py` | SYSTEM_PROMPT, SKILLS list, `build_agent_card()` |
-| `mcp_tools.py` | `@mcp.tool()` functions calling CLI harness via subprocess |
+| `mcp_tools.py` | `@mcp.tool()` functions calling your backend (CLI, API, library, etc.) |
 | `mcp_entry.py` | `from mcp_tools import mcp; mcp.run()` |
-| `main.py` | Thin entry point using `agents_core.app.create_app()` |
-| `pyproject.toml` | Depends on `agents-core` + CLI harness |
-| `config/` | chains.toml, pricing.toml |
+| `main.py` | Thin entry point using `agents_core.app.run_agent()` |
+| `pyproject.toml` | Depends on `agents-core` (+ optional backend deps) |
+| `config/` | pricing.toml (required), chains.toml (if multi-chain/env) |
+| `docker/install.sh` | (optional) Tool installation steps for Dockerfile |
 
-3. Run `uv sync --prerelease=allow --all-packages` from workspace root
+Then run `uv sync --prerelease=allow --all-packages` from workspace root.
+
+The backend can be anything that returns structured data:
+- **CLI-Anything harness**: `subprocess.run(["cli-anything-<tool>", "--json", ...])` — see `agents/cast/`
+- **Direct CLI**: `subprocess.run(["solana", "--output", "json", ...])` — see `agents/solana/`
+- **REST API**: `httpx.get("https://api.example.com/...")` — just return JSON
+- **Python library**: Direct function calls — no subprocess needed
 
 ## Environment Variables
 
-All variables use the `AM_` prefix. See [`agents/cast/.env.example`](agents/cast/.env.example) for the full list.
+All variables use the `AM_` prefix. See each agent's `.env.example` for the full list.
 
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `AM_LLM_API_KEY` | Yes | LLM API key (DeepSeek, OpenAI, etc.) |
-| `AM_DEFAULT_CHAIN` | Yes | Default chain slug (e.g. `ethereum`) |
-| `AM_RPC_ETHEREUM` | Per chain | RPC URL for Ethereum |
-| `AM_RPC_ARBITRUM` | Per chain | RPC URL for Arbitrum |
+| `AM_DEFAULT_CHAIN` | Per agent | Default chain/cluster slug |
+| `AM_RPC_*` | Per chain | RPC URL per chain (e.g. `AM_RPC_ETHEREUM`) |
 | `AM_WALLET_ADDRESS` | No | EVM wallet — enables x402 payment gate |
 | `AM_PRIVATE_KEY` | No | For ERC-8004 on-chain registration |
 

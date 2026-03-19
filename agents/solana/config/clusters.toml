@@ -1,0 +1,21 @@
+default = "devnet"
+
+[chains.mainnet_beta]
+name = "Mainnet Beta"
+chain_id = 101
+explorer = "https://explorer.solana.com"
+symbol = "SOL"
+
+[chains.devnet]
+name = "Devnet"
+chain_id = 102
+explorer = "https://explorer.solana.com/?cluster=devnet"
+symbol = "SOL"
+testnet = true
+
+[chains.testnet]
+name = "Testnet"
+chain_id = 103
+explorer = "https://explorer.solana.com/?cluster=testnet"
+symbol = "SOL"
+testnet = true

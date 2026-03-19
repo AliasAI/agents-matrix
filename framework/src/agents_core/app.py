@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 
+import uvicorn
 from a2a.types import AgentCard
 from fastapi import FastAPI
 from a2a.server.apps import A2AStarletteApplication
@@ -11,7 +13,7 @@ from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
 from x402.http.middleware.fastapi import PaymentMiddlewareASGI
 
-from agents_core.settings import Settings, Pricing
+from agents_core.settings import Settings, Pricing, get_settings
 from agents_core.payment import build_resource_server, build_route_config
 from agents_core.executor import MCPAgentExecutor
 
@@ -71,3 +73,38 @@ def create_app(
         return {"status": "ok", "service": service_name}
 
     return app
+
+
+def setup_logging(log_dir: Path, log_name: str) -> None:
+    """Configure root logger with console + file output."""
+    log_dir.mkdir(parents=True, exist_ok=True)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s  %(levelname)-8s  %(name)s  %(message)s",
+        handlers=[
+            logging.StreamHandler(),
+            logging.FileHandler(log_dir / f"{log_name}.log"),
+        ],
+    )
+
+
+def run_agent(
+    *,
+    agent_card: AgentCard,
+    mcp_module: str,
+    system_prompt: str,
+    log_name: str,
+    pricing_path: Path,
+) -> None:
+    """Standard entry point for all agents."""
+    settings = get_settings()
+    pricing = Pricing(pricing_path)
+    setup_logging(Path("logs"), log_name)
+    app = create_app(
+        settings,
+        pricing,
+        agent_card=agent_card,
+        mcp_module=mcp_module,
+        system_prompt=system_prompt,
+    )
+    uvicorn.run(app, host=settings.host, port=settings.port, log_level="info")

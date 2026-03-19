@@ -1,74 +1,73 @@
 # Agents Matrix
 
-Multi-agent platform — each agent wraps a CLI tool as a paid Agent-as-a-Service via A2A protocol + x402 payment.
+Quick-launch boilerplate for paid AI agents — A2A protocol + x402 payment + ERC-8004 registration. Tool backend is pluggable: CLI-Anything harness, direct CLI subprocess, REST API, Python library.
 
 ## Monorepo Structure
 
 ```
 agents-matrix/
+  scripts/                      ← shared CLI scripts (auto-detect agent from CWD or $1)
+    run.sh                      ← run agent locally
+    deploy.sh                   ← deploy via Docker Compose
+    register.sh                 ← ERC-8004 on-chain registration
+    dev.sh                      ← launch MCP inspector
+    health.sh                   ← health check running agent
+    docker-gen.sh               ← generate Dockerfile from template
+    new-agent.sh                ← scaffold a new agent
   framework/                    ← agents-core shared package
     src/agents_core/
       settings.py               ← Settings, ChainRegistry, Pricing, ChainInfo
       executor.py               ← Generic MCPAgentExecutor
       loop.py                   ← run_agent_loop() (system_prompt as param)
-      app.py                    ← create_app() factory (generic)
+      app.py                    ← create_app() + run_agent() entry point
       payment.py                ← x402 middleware helpers
       registration.py           ← ERC-8004 helper (generic)
   agents/
-    cast/                       ← Cast Transaction Agent
-      main.py                   ← thin entry point
-      agent_config.py           ← SYSTEM_PROMPT, SKILLS, build_agent_card()
-      mcp_tools.py              ← @mcp.tool() functions (cast-specific)
-      mcp_entry.py              ← mcp.run() (2 lines)
-      config/chains.toml, pricing.toml
-      Dockerfile, docker-compose.yml, .env.example
-      scripts/run.sh, deploy.sh, register.sh
+    cast/                       ← Cast Transaction Agent (CLI-Anything harness)
+    drawio/                     ← Draw.io Diagram Agent (CLI-Anything harness)
+    solana/                     ← Solana Agent (direct CLI)
+    sui/                        ← Sui Agent (direct CLI)
   pyproject.toml                ← uv workspace
 ```
 
-## CLI-Anything Integration
+## Backend Patterns
 
-Agents are backed by CLI harnesses from [CLI-Anything (HKUDS)](https://github.com/HKUDS/CLI-Anything) and our own [CLI-Anything fork](https://github.com/0xouzm/CLI-Anything). Each harness wraps a software tool as a structured CLI with `--json` output, making it trivially callable from MCP tools via `subprocess`.
-
+### CLI-Anything Harness (cast, drawio)
+```python
+def _run_cli(*args: str) -> str | dict | list:
+    cmd = ["cli-anything-<tool>", "--json", *args]
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+    return json.loads(result.stdout)
 ```
-CLI-Anything repo              agents-matrix
-─────────────────              ─────────────
-cast/agent-harness        →    agents/cast/      (live)
-<tool>/agent-harness      →    agents/<tool>/    (add next)
-```
 
-The harness can be written in any framework (CLI-Anything uses Click, but argparse, typer, etc. all work). The only requirement is structured `--json` output so MCP tools can parse results.
+### Direct CLI Subprocess (solana, sui)
+```python
+BIN = os.environ.get("AM_<TOOL>_BIN", shutil.which("<tool>") or "<tool>")
+def _run_cli(*args: str) -> dict | list | str:
+    cmd = [BIN, *args, "--output", "json"]
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+    return json.loads(result.stdout)
+```
 
 ## Adding a New Agent
 
-1. Get or write a CLI harness in the CLI-Anything repo (`<tool>/agent-harness/`)
-2. Create `agents/<name>/` with these files:
-   - `agent_config.py` — SYSTEM_PROMPT, SKILLS, build_agent_card()
-   - `mcp_tools.py` — @mcp.tool() functions calling the CLI harness via subprocess
-   - `mcp_entry.py` — `from mcp_tools import mcp; mcp.run()`
-   - `main.py` — thin entry point using `agents_core.app.create_app()`
-   - `pyproject.toml` — depends on `agents-core` + CLI harness (path or git dep)
-   - `config/` — chains.toml, pricing.toml
-3. Framework (`agents-core`) handles: A2A server, x402 payment, LLM loop, MCP executor, registration
-
-## Current Agent: Cast Transaction Agent
-
-Multi-chain EVM transaction analysis powered by Foundry cast.
-
-```
-Client (A2A) → FastAPI + x402 → MCPAgentExecutor → MCP Server → cli-anything-cast → Foundry cast
+```bash
+./scripts/new-agent.sh <name> --port <PORT>
+# Then edit agent_config.py and mcp_tools.py
 ```
 
-- **Entry**: `agents/cast/main.py`
-- **Config**: `agents/cast/config/chains.toml` + `agents/cast/config/pricing.toml`
-- **MCP tools**: `agents/cast/mcp_tools.py` (9 tools, multi-chain)
-- **Agent card**: `agents/cast/agent_config.py` (6 skills)
+Or manually create `agents/<name>/` with:
+- `agent_config.py` — SYSTEM_PROMPT, SKILLS, build_agent_card()
+- `mcp_tools.py` — @mcp.tool() functions calling any backend
+- `mcp_entry.py` — `from mcp_tools import mcp; mcp.run()`
+- `main.py` — thin entry using `agents_core.app.run_agent()`
+- `pyproject.toml` — depends on `agents-core` (+ optional backend deps)
+- `config/` — pricing.toml, chains.toml (if multi-chain/env)
+- `docker/install.sh` — (optional) tool installation for Dockerfile
 
-## Multi-Chain Support
+## Multi-Chain/Cluster/Env Support
 
-All RPC-dependent tools accept a `chain` parameter. Chain metadata in `config/chains.toml`. RPC URLs from `AM_RPC_{CHAIN}` env vars.
-
-Supported chains: ethereum, arbitrum, base, polygon, optimism, bsc, avalanche, linea, scroll, zksync, blast.
+All multi-environment tools use `ChainRegistry` from agents-core with same `[chains.*]` schema in config TOML. RPC URLs from `AM_RPC_{SLUG}` env vars. Passed as CLI flag to backend.
 
 ## Key Dependencies
 
@@ -77,7 +76,6 @@ Supported chains: ethereum, arbitrum, base, polygon, optimism, bsc, avalanche, l
 - `agent0-sdk` — ERC-8004 on-chain registration
 - `openai` — LLM agent loop (DeepSeek / any OpenAI-compatible API)
 - `mcp[cli]` — MCP tool server
-- `cli-anything-cast` — path dependency from CLI-Anything repo
 
 ## Commands
 
@@ -85,25 +83,25 @@ Supported chains: ethereum, arbitrum, base, polygon, optimism, bsc, avalanche, l
 # Install workspace
 uv sync --prerelease=allow --all-packages
 
-# Run cast agent locally
-cd agents/cast && uv run python main.py
+# Root-level scripts (auto-detect agent from CWD or accept $1)
+./scripts/run.sh cast              # run agent locally
+./scripts/deploy.sh solana         # deploy via Docker
+./scripts/register.sh cast         # ERC-8004 on-chain registration
+./scripts/dev.sh drawio            # launch MCP inspector
+./scripts/health.sh cast           # health check running agent
+./scripts/docker-gen.sh sui        # generate Dockerfile to stdout
+./scripts/new-agent.sh weather --port 9010  # scaffold new agent
 
-# Deploy cast agent (Docker)
+# Per-agent scripts still work (thin wrappers to root scripts)
+cd agents/cast && ./scripts/run.sh
 cd agents/cast && ./scripts/deploy.sh
-
-# Register on-chain
-cd agents/cast && ./scripts/register.sh
-
-# Test MCP server standalone
-cd agents/cast && uv run mcp dev mcp_tools.py
 ```
 
 ## Environment
 
 - Python 3.12+, managed by `uv` (workspace mode)
 - `uv sync --prerelease=allow --all-packages` required
-- All env vars use `AM_` prefix — see `agents/cast/.env.example`
-- Requires Foundry `cast` on PATH for cast agent
+- All env vars use `AM_` prefix — see each agent's `.env.example`
 - Never commit `.env` — it contains secrets
 
 ## Conventions

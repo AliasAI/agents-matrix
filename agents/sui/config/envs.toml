@@ -1,0 +1,21 @@
+default = "devnet"
+
+[chains.mainnet]
+name = "Mainnet"
+chain_id = 1
+explorer = "https://suiscan.xyz/mainnet"
+symbol = "SUI"
+
+[chains.devnet]
+name = "Devnet"
+chain_id = 2
+explorer = "https://suiscan.xyz/devnet"
+symbol = "SUI"
+testnet = true
+
+[chains.testnet]
+name = "Testnet"
+chain_id = 3
+explorer = "https://suiscan.xyz/testnet"
+symbol = "SUI"
+testnet = true

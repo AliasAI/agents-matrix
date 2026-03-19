@@ -15,6 +15,9 @@ members = [
     "agents-core",
     "agents-matrix",
     "cast-agent",
+    "drawio-agent",
+    "solana-agent",
+    "sui-agent",
 ]
 
 [[package]]
@@ -606,6 +609,24 @@ requires-dist = [
 ]
 
 [[package]]
+name = "cli-anything-drawio"
+version = "1.0.0"
+source = { editable = "../../CLI-Anything/drawio/agent-harness" }
+dependencies = [
+    { name = "click" },
+    { name = "prompt-toolkit" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "click", specifier = ">=8.0.0" },
+    { name = "prompt-toolkit", specifier = ">=3.0.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0.0" },
+    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0.0" },
+]
+provides-extras = ["dev"]
+
+[[package]]
 name = "click"
 version = "8.3.1"
 source = { registry = "https://pypi.org/simple" }
@@ -812,6 +833,21 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/8c/8b/57666417c0f90f08bcafa776861060426765fdb422eb10212086fb811d26/dnspython-2.8.0.tar.gz", hash = "sha256:181d3c6996452cb1189c4046c61599b84a5a86e099562ffde77d26984ff26d0f", size = 368251, upload-time = "2025-09-07T18:58:00.022Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ba/5a/18ad964b0086c6e62e2e7500f7edc89e3faa45033c71c1893d34eed2b2de/dnspython-2.8.0-py3-none-any.whl", hash = "sha256:01d9bbc4a2d76bf0db7c1f729812ded6d912bd318d3b1cf81d30c0f845dbf3af", size = 331094, upload-time = "2025-09-07T18:57:58.071Z" },
+]
+
+[[package]]
+name = "drawio-agent"
+version = "0.1.0"
+source = { editable = "agents/drawio" }
+dependencies = [
+    { name = "agents-core" },
+    { name = "cli-anything-drawio" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "agents-core", editable = "framework" },
+    { name = "cli-anything-drawio", editable = "../../CLI-Anything/drawio/agent-harness" },
 ]
 
 [[package]]
@@ -2732,6 +2768,17 @@ wheels = [
 ]
 
 [[package]]
+name = "solana-agent"
+version = "0.1.0"
+source = { editable = "agents/solana" }
+dependencies = [
+    { name = "agents-core" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "agents-core", editable = "framework" }]
+
+[[package]]
 name = "sortedcontainers"
 version = "2.4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2765,6 +2812,17 @@ sdist = { url = "https://files.pythonhosted.org/packages/06/47/11581c2f488a65ab8
 wheels = [
     { url = "https://files.pythonhosted.org/packages/37/63/843f3f4aa2cbdadb6becddceb81d034cc417fbecd2fb0e105092a8c82a8a/starlette-1.0.0rc1-py3-none-any.whl", hash = "sha256:fca38b17fc7705dcd781cfcafa2702b19e2ebf971384169152a1d53d6073ef39", size = 72224, upload-time = "2026-02-23T22:12:30.573Z" },
 ]
+
+[[package]]
+name = "sui-agent"
+version = "0.1.0"
+source = { editable = "agents/sui" }
+dependencies = [
+    { name = "agents-core" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "agents-core", editable = "framework" }]
 
 [[package]]
 name = "tomli"

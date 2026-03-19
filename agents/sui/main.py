@@ -1,4 +1,4 @@
-"""Cast Transaction A2A Agent Service — entry point."""
+"""Sui A2A Agent Service — entry point."""
 
 from pathlib import Path
 
@@ -11,6 +11,6 @@ if __name__ == "__main__":
         agent_card=build_agent_card(get_settings()),
         mcp_module="mcp_entry",
         system_prompt=SYSTEM_PROMPT,
-        log_name="cast-agent",
+        log_name="sui-agent",
         pricing_path=Path(__file__).parent / "config" / "pricing.toml",
     )
