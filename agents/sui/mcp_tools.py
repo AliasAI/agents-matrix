@@ -9,6 +9,7 @@ import json
 import os
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
@@ -46,11 +47,31 @@ def _resolve_env(env: str | None) -> str:
 def _run_cli(
     *args: str, url: str | None = None,
 ) -> dict | list | str:
-    """Run sui client with --json flag and return parsed output."""
+    """Run sui client with --json flag and return parsed output.
+
+    Uses a temporary HOME directory to inject RPC URL without relying on
+    --url flag (removed in sui v1.40+).
+    """
     cmd = [SUI_BIN, "client", *args, "--json"]
+    env = os.environ.copy()
+
     if url:
-        cmd.extend(["--url", url])
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cfg_dir = Path(tmpdir) / ".sui" / "sui_config"
+            cfg_dir.mkdir(parents=True)
+            (cfg_dir / "sui.keystore").write_text("[]")
+            (cfg_dir / "client.yaml").write_text(
+                f"---\nkeystore:\n  File: {cfg_dir}/sui.keystore\n"
+                f"envs:\n  - alias: default\n    rpc: \"{url}\"\n    ws: ~\n    basic_auth: ~\n"
+                f"active_env: default\nactive_address: ~\n"
+            )
+            env["HOME"] = tmpdir
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=120, env=env
+            )
+    else:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+
     if result.returncode != 0:
         raise RuntimeError(
             f"sui CLI error: {result.stderr.strip() or result.stdout.strip()}"
@@ -94,7 +115,7 @@ def get_objects(address: str, env: str | None = None) -> list | str:
         env: Environment (mainnet, devnet, testnet). Defaults to configured default.
     """
     url = _resolve_env(env)
-    return _run_cli("objects", "--address", address, url=url)
+    return _run_cli("objects", address, url=url)
 
 
 # -- Balance / Gas --
@@ -109,7 +130,7 @@ def get_balance(address: str, env: str | None = None) -> dict | str:
         env: Environment (mainnet, devnet, testnet). Defaults to configured default.
     """
     url = _resolve_env(env)
-    return _run_cli("balance", "--address", address, url=url)
+    return _run_cli("balance", address, url=url)
 
 
 @mcp.tool()
@@ -121,7 +142,7 @@ def get_gas(address: str, env: str | None = None) -> list | str:
         env: Environment (mainnet, devnet, testnet). Defaults to configured default.
     """
     url = _resolve_env(env)
-    return _run_cli("gas", "--address", address, url=url)
+    return _run_cli("gas", address, url=url)
 
 
 # -- Transaction --

@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import json
 import subprocess
+import tempfile
+import os
 
 from mcp.server.fastmcp import FastMCP
 
@@ -19,10 +21,21 @@ mcp = FastMCP(
     ),
 )
 
+# Module-level project path — persists across tool calls within one agent session
+_current_project: str | None = None
+
 
 def _run_cli(*args: str) -> str | dict | list:
-    """Run cli-anything-drawio with --json flag and return parsed output."""
-    cmd = ["cli-anything-drawio", "--json", *args]
+    """Run cli-anything-drawio with --json flag and return parsed output.
+
+    Automatically injects --project <path> when a project is open so the
+    CLI can resume state across subprocess calls.
+    """
+    global _current_project
+    cmd = ["cli-anything-drawio", "--json"]
+    if _current_project and os.path.exists(_current_project):
+        cmd.extend(["--project", _current_project])
+    cmd.extend(args)
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
     if result.returncode != 0:
         raise RuntimeError(
@@ -41,10 +54,18 @@ def create_project(preset: str | None = None) -> dict:
     Args:
         preset: Page size preset — letter, a4, a3, 16:9, 4:3, square. Defaults to letter.
     """
-    args = ["project", "new"]
+    global _current_project
+    tmp = tempfile.mktemp(suffix=".drawio", dir="/tmp")
+    args = ["project", "new", "-o", tmp]
     if preset:
         args.extend(["--preset", preset])
-    return _run_cli(*args)
+    # Don't pass --project for new project creation
+    cmd = ["cli-anything-drawio", "--json", *args]
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+    if result.returncode != 0:
+        raise RuntimeError(f"CLI error: {result.stderr.strip() or result.stdout.strip()}")
+    _current_project = tmp
+    return json.loads(result.stdout)
 
 
 @mcp.tool()
@@ -54,6 +75,8 @@ def open_project(path: str) -> dict:
     Args:
         path: Path to the .drawio file to open.
     """
+    global _current_project
+    _current_project = path
     return _run_cli("project", "open", path)
 
 
@@ -64,9 +87,11 @@ def save_project(path: str | None = None) -> dict:
     Args:
         path: Output path. If omitted, saves to the original file location.
     """
+    global _current_project
     args = ["project", "save"]
     if path:
         args.append(path)
+        _current_project = path
     return _run_cli(*args)
 
 
