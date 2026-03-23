@@ -4,14 +4,12 @@ A quick-launch boilerplate for building **paid AI agents** with [A2A protocol](h
 
 Write 4–5 files, get a paid A2A agent. The tool backend is pluggable — CLI-Anything harness, direct CLI subprocess, REST API, Python library — anything that produces structured output works.
 
-```
-Backend Type                  Agent Example
-──────────────────────        ──────────────────────────────────────
-CLI-Anything harness     →    agents/cast/      EVM tx analysis        (Foundry cast)
-CLI-Anything harness     →    agents/drawio/    Diagram creation       (draw.io)
-Direct CLI subprocess    →    agents/solana/    Solana blockchain      (solana CLI)
-Direct CLI subprocess    →    agents/sui/       Sui blockchain         (sui client)
-```
+| Backend Type | Agent | Description | Agentscan |
+|---|---|---|---|
+| CLI-Anything harness | [agents/cast/](agents/cast/) | EVM tx analysis (Foundry cast) | [View](https://agentscan.info/agents/94c4e69a-829f-4de8-96ad-d84578fc7762) |
+| CLI-Anything harness | [agents/drawio/](agents/drawio/) | Diagram creation (draw.io) | [View](https://agentscan.info/agents/02d1a92e-8243-43f4-a503-f77827858715) |
+| Direct CLI subprocess | [agents/solana/](agents/solana/) | Solana blockchain (solana CLI) | [View](https://agentscan.info/agents/36798440-e452-4168-a65a-16695bf5cb60) |
+| Direct CLI subprocess | [agents/sui/](agents/sui/) | Sui blockchain (sui client) | [View](https://agentscan.info/agents/7b19d177-3daf-495c-af48-13d47bc9a4cf) |
 
 ## Architecture
 
