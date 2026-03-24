@@ -8,6 +8,7 @@ from pathlib import Path
 import uvicorn
 from a2a.types import AgentCard
 from fastapi import FastAPI
+from fastapi.responses import PlainTextResponse
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
@@ -16,6 +17,7 @@ from x402.http.middleware.fastapi import PaymentMiddlewareASGI
 from agents_core.settings import Settings, Pricing, get_settings
 from agents_core.payment import build_resource_server, build_route_config
 from agents_core.executor import MCPAgentExecutor
+from agents_core.discovery import build_discovery, build_llms_txt
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +66,18 @@ def create_app(
         logger.info("x402 payment gate enabled for POST /")
     else:
         logger.warning("No wallet address configured — x402 payment gate DISABLED")
+
+    # -- Agent-friendly discovery --
+    discovery_data = build_discovery(agent_card, pricing, settings)
+    llms_txt_content = build_llms_txt(agent_card, pricing, settings)
+
+    @app.get("/discovery")
+    async def discovery() -> dict:
+        return discovery_data
+
+    @app.get("/llms.txt")
+    async def llms_txt() -> PlainTextResponse:
+        return PlainTextResponse(llms_txt_content, media_type="text/markdown")
 
     # -- Utility endpoints --
     service_name = agent_card.name.lower().replace(" ", "-")

@@ -1,0 +1,26 @@
+[project]
+name = "agentscan-agent"
+version = "0.1.0"
+description = "Agentscan Agent — ERC-8004 AI Agent Explorer across 21 networks"
+requires-python = ">=3.12"
+dependencies = [
+    "agents-core",
+    "httpx",
+]
+
+[tool.uv]
+prerelease = "allow"
+
+[tool.uv.sources]
+agents-core = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["agent_config", "mcp_tools", "mcp_entry"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

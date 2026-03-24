@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from a2a.types import AgentCard, AgentSkill, AgentCapabilities, AgentInterface
+from a2a.types import (
+    AgentCard, AgentSkill, AgentCapabilities, AgentExtension, AgentInterface,
+)
 
 from agents_core.settings import Settings
 
@@ -100,6 +102,16 @@ def build_agent_card(settings: Settings) -> AgentCard:
         version="0.1.0",
         default_input_modes=["text"],
         default_output_modes=["text"],
-        capabilities=AgentCapabilities(streaming=False, push_notifications=False),
+        capabilities=AgentCapabilities(
+            streaming=False,
+            push_notifications=False,
+            extensions=[
+                AgentExtension(
+                    uri="https://github.com/google-a2a/a2a-x402/v0.1",
+                    description="Accepts USDC payments via x402 protocol.",
+                    required=False,
+                ),
+            ] if settings.wallet_address else [],
+        ),
         skills=SKILLS,
     )
