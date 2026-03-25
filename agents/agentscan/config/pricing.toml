@@ -1,13 +1,13 @@
 # Per-skill USDC pricing for x402 payment gate.
 # Format: "$<amount>" — parsed by x402 PaymentOption.
 
-default = "$0.01"
+default = "$0.001"
 
 [skills]
-deep_search      = "$0.02"
-agent_analysis   = "$0.01"
-owner_portfolio  = "$0.01"
-data_analysis    = "$0.01"
-leaderboard      = "$0.02"
-taxonomy         = "$0.02"
-network_intel    = "$0.01"
+deep_search      = "$0.001"
+agent_analysis   = "$0.001"
+owner_portfolio  = "$0.001"
+data_analysis    = "$0.001"
+leaderboard      = "$0.001"
+taxonomy         = "$0.001"
+network_intel    = "$0.001"

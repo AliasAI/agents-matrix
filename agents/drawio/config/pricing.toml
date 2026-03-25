@@ -1,10 +1,10 @@
 # Per-skill USDC pricing for x402 payment gate.
 # Format: "$<amount>" — parsed by x402 PaymentOption.
 
-default = "$0.01"
+default = "$0.001"
 
 [skills]
-diagram_create   = "$0.01"
-shape_manage     = "$0.02"
-connector_manage = "$0.02"
-diagram_export   = "$0.03"
+diagram_create   = "$0.001"
+shape_manage     = "$0.001"
+connector_manage = "$0.001"
+diagram_export   = "$0.001"
