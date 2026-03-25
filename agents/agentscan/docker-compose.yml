@@ -1,3 +1,5 @@
+name: agentscan-agent
+
 services:
   agentscan-agent:
     build:

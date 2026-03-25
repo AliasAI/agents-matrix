@@ -48,8 +48,9 @@ if [ -f config/chains.toml ] || [ -f config/clusters.toml ] || [ -f config/envs.
   DEFAULT_CHAIN="${AM_DEFAULT_CHAIN:-}"
   if [ -n "$DEFAULT_CHAIN" ]; then
     RPC_VAR="AM_RPC_$(echo "$DEFAULT_CHAIN" | tr '[:lower:]' '[:upper:]')"
-    if [ -z "${!RPC_VAR:-}" ]; then
+    if [ -z "${!RPC_VAR:-}" ] && [ -z "${AM_RPC:-}" ]; then
       echo "ERROR: $RPC_VAR is not set in .env (required for default chain '$DEFAULT_CHAIN')"
+      echo "  Alternatively, set AM_RPC for a universal multi-chain RPC URL."
       exit 1
     fi
   fi
