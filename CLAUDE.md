@@ -104,8 +104,37 @@ cd agents/cast && ./scripts/deploy.sh
 - All env vars use `AM_` prefix — see each agent's `.env.example`
 - Never commit `.env` — it contains secrets
 
+## Production Server Notes
+
+### `uv run` fails with "Distribution not found: CLI-Anything/..."
+
+The workspace includes cast and drawio, whose `pyproject.toml` reference local
+editable paths (`../../../../CLI-Anything/cast/agent-harness`) that only exist
+on dev machines. On the production server these paths are absent, so `uv run`
+fails for **any** workspace member — even agents that have no harness deps.
+
+**`register.sh` handles this automatically**: if `../../CLI-Anything` is not
+found it detects the running Docker container for that agent and execs inside
+it (injecting env vars from the agent's local `.env`). No manual steps needed:
+
+```bash
+./scripts/register.sh agentscan   # works on both dev and prod
+```
+
+Docker builds for cast/drawio are not affected — their Dockerfiles patch the
+harness path and call `uv lock` independently before `uv sync`.
+
+### nginx — agent card returns 403
+
+Each agent must have a `location ^~ /<name>/` block in `/etc/nginx/sites-available/empath`.
+Without it, requests to `/<name>/.well-known/agent-card.json` fall through to
+the catch-all `location ~ /\.` → `deny all` → 403. Add new agent routes before
+the `# 前端入口 + SPA 路由 fallback` comment.
+
 ## Conventions
 
 - Keep files under 300 lines
 - Use strong types (pydantic models, dataclasses), avoid unstructured dicts
 - Logs output to `logs/` directory
+- All responses must be in English or Chinese — never Korean
+- Code comments must be in English only

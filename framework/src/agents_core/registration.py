@@ -6,6 +6,7 @@ import logging
 import sys
 
 from agent0_sdk import SDK
+from agent0_sdk.core.models import Endpoint, EndpointType
 from web3.middleware import ExtraDataToPOAMiddleware
 
 from agents_core.settings import Settings
@@ -21,17 +22,24 @@ def register(
     *,
     name: str,
     description: str,
-    skill: str = "data_engineering/data_transformation_pipeline",
-    domain: str = "technology/blockchain",
+    skills: list[str] | None = None,
+    domains: list[str] | None = None,
+    mcp_tools: list[str] | None = None,
+    agent_id: str | None = None,
 ) -> None:
-    """Register an agent on-chain (ERC-721 mint + IPFS metadata).
+    """Register or update an agent on-chain (ERC-721 mint + IPFS metadata).
 
     Args:
         settings: Application settings (keys, RPC, etc.).
         name: Agent display name.
         description: Agent description for the registry.
-        skill: OASF skill identifier.
-        domain: OASF domain identifier.
+        skills: OASF skill slugs (defaults to a generic pipeline skill).
+        domains: OASF domain slugs (defaults to technology/blockchain).
+        mcp_tools: MCP tool names to advertise in the IPFS services array.
+            If provided, adds an MCP service entry pointing to settings.base_url.
+        agent_id: Existing on-chain agent ID (e.g. "56:52001").
+            If provided, loads the existing agent and updates its IPFS metadata
+            instead of minting a new token.
     """
     if not settings.private_key:
         logger.error("AM_PRIVATE_KEY is required for registration")
@@ -59,15 +67,38 @@ def register(
         registryOverrides={settings.chain_id: REGISTRY_ADDRESSES},
     )
 
-    agent = sdk.createAgent(name=name, description=description)
+    if agent_id:
+        logger.info("Loading existing agent %s for update...", agent_id)
+        agent = sdk.loadAgent(agent_id)
+        agent.registration_file.name = name
+        agent.registration_file.description = description
+        # Clear existing endpoints so we rebuild them cleanly below
+        agent.registration_file.endpoints = []
+    else:
+        agent = sdk.createAgent(name=name, description=description)
 
-    # A2A endpoint
+    # A2A endpoint — auto_fetch pulls a2aSkills from the live agent card
     a2a_url = settings.base_url + "/.well-known/agent-card.json"
     agent.setA2A(a2a_url)
 
+    # MCP endpoint — added directly to the endpoints list so it appears in
+    # the IPFS services array.  auto_fetch is disabled because MCP runs as
+    # a stdio subprocess (no public HTTP MCP server); tools are supplied
+    # explicitly via the mcp_tools parameter.
+    if mcp_tools:
+        mcp_ep = Endpoint(
+            type=EndpointType.MCP,
+            value=settings.base_url + "/",
+            meta={"version": "2025-06-18", "mcpTools": mcp_tools},
+        )
+        agent.registration_file.endpoints.append(mcp_ep)
+        logger.info("MCP endpoint registered with %d tools", len(mcp_tools))
+
     # OASF skills and domains
-    agent.addSkill(skill, validate_oasf=False)
-    agent.addDomain(domain, validate_oasf=False)
+    for skill in (skills or ["data_engineering/data_transformation_pipeline"]):
+        agent.addSkill(skill, validate_oasf=False)
+    for domain in (domains or ["technology/blockchain"]):
+        agent.addDomain(domain, validate_oasf=False)
 
     # Payment support — setX402Support is metadata (before registration)
     # setWallet requires agentId so must come after registerIPFS()
@@ -77,7 +108,7 @@ def register(
     agent.setTrust(reputation=True)
     agent.setActive(True)
 
-    # Custom metadata
+    # On-chain metadata (stored as contract key-value, not in IPFS)
     agent.setMetadata({
         "version": "0.1.0",
         "framework": "agents-matrix",

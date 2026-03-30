@@ -10,7 +10,7 @@ from agents_core.settings import Settings
 
 SYSTEM_PROMPT = (
     "You are an ERC-8004 AI Agent Explorer and Analyst powered by Agentscan. "
-    "You have deep access to on-chain data for 146,000+ AI agents across 21 blockchain "
+    "You have deep access to on-chain data for AI agents across multiple blockchain "
     "networks. You can search, analyze, and provide insights on any aspect of the "
     "AI agent ecosystem.\n\n"
     "## TOOLS BY USE CASE\n\n"
@@ -55,94 +55,194 @@ SYSTEM_PROMPT = (
 
 SKILLS: list[AgentSkill] = [
     AgentSkill(
-        id="deep_search",
-        name="Deep Search",
+        id="search",
+        name="Agent Search",
         description=(
-            "Search AI agents with 12+ combinable filters: text, network, OASF skill/domain, "
-            "owner address, reputation range, date range, endpoint health, quality level, "
-            "and flexible sorting."
+            "Search ERC-8004 agents with combinable filters: free text, network, "
+            "OASF skill/domain slug, owner address, reputation range, date range, "
+            "endpoint health status, quality level, and sort order."
         ),
-        tags=["search", "filter", "erc8004", "multichain"],
+        tags=["search_agents"],
         examples=[
-            "Find DeFi agents on Base with reputation",
-            "Search agents with coding skills created this week",
-            "Show verified agents owned by 0x1234...",
-            "Find agents with working endpoints on Ethereum",
+            "Find DeFi agents on Base with a reputation score above 4",
+            "Search for coding agents registered this week",
+            "Show quality agents owned by 0x1234... on Ethereum",
+            "Find agents with healthy endpoints on Polygon",
         ],
     ),
     AgentSkill(
-        id="agent_analysis",
-        name="Agent Analysis",
+        id="discover",
+        name="Agent Discovery",
         description=(
-            "Deep-dive into any agent: metadata, reputation breakdown, individual feedbacks, "
-            "on-chain activities, endpoint health checks, transaction history, and similar agents."
+            "Discover agents by similarity or trending status. "
+            "find_similar_agents returns agents sharing skills and domains with a given agent. "
+            "get_trending_agents returns top-ranked, featured, and newest quality agents."
         ),
-        tags=["agent", "analysis", "reputation", "health"],
+        tags=["find_similar_agents", "get_trending_agents"],
         examples=[
-            "Analyze agent abc-123 in detail",
-            "Show all feedbacks for this agent",
-            "Check which endpoints are working",
-            "What's the transaction history?",
-        ],
-    ),
-    AgentSkill(
-        id="owner_portfolio",
-        name="Owner Portfolio",
-        description="View all agents owned by a wallet address with cross-network portfolio summary.",
-        tags=["owner", "portfolio", "wallet"],
-        examples=[
-            "Show all agents owned by 0x1234...",
-            "What's this wallet's agent portfolio?",
-        ],
-    ),
-    AgentSkill(
-        id="data_analysis",
-        name="Data Analysis",
-        description=(
-            "Platform-wide analytics: registration trends, network distribution, "
-            "skill rankings, transaction stats, endpoint health rates, and leaderboard."
-        ),
-        tags=["analytics", "stats", "trends", "data"],
-        examples=[
-            "Show registration trend for the last 90 days",
-            "Which network has the most agents?",
-            "What are the most popular agent skills?",
-            "Show the analytics overview",
+            "Find agents similar to agent abc-123",
+            "Show trending agents right now",
+            "What agents are similar to this one?",
         ],
     ),
     AgentSkill(
         id="leaderboard",
         name="Leaderboard",
         description=(
-            "Composite-scored agent rankings based on service quality, usage, "
-            "freshness, and profile completeness."
+            "Composite-scored agent rankings weighted by service quality, usage frequency, "
+            "metadata freshness, and profile completeness. Filterable by network."
         ),
-        tags=["leaderboard", "ranking", "score"],
+        tags=["get_leaderboard"],
         examples=[
-            "Show the top agents leaderboard",
-            "Who's ranked highest on Base?",
+            "Show the global agent leaderboard",
+            "Who ranks highest on Base?",
+            "Top 10 agents by composite score",
+        ],
+    ),
+    AgentSkill(
+        id="agent_profile",
+        name="Agent Profile",
+        description=(
+            "Retrieve full metadata for a specific agent: OASF classification, "
+            "on-chain registration data, wallet, endpoints, and capabilities."
+        ),
+        tags=["get_agent"],
+        examples=[
+            "Get full details for agent abc-123",
+            "What chain is this agent registered on?",
+            "Show the agent card for agent xyz",
+        ],
+    ),
+    AgentSkill(
+        id="agent_reputation",
+        name="Agent Reputation",
+        description=(
+            "Fetch reputation data for an agent: aggregate score and feedback count "
+            "via get_agent_reputation, or individual feedback items with scores, tags, "
+            "and timestamps via get_agent_feedbacks."
+        ),
+        tags=["get_agent_reputation", "get_agent_feedbacks"],
+        examples=[
+            "What's the reputation score for agent abc-123?",
+            "Show all user feedbacks for this agent",
+            "How many validations does this agent have?",
+        ],
+    ),
+    AgentSkill(
+        id="agent_activity",
+        name="Agent Activity & Transactions",
+        description=(
+            "On-chain history for a specific agent. "
+            "get_agent_activities returns registration, update, and validation events. "
+            "get_agent_transactions returns gas usage, fees, and transaction breakdown."
+        ),
+        tags=["get_agent_activities", "get_agent_transactions"],
+        examples=[
+            "Show on-chain activity history for agent abc-123",
+            "What transactions has this agent made?",
+            "When was this agent last updated on-chain?",
+        ],
+    ),
+    AgentSkill(
+        id="endpoint_health",
+        name="Endpoint Health",
+        description=(
+            "Check live endpoint status. "
+            "get_agent_endpoint_health checks all URLs for a single agent (response time, status). "
+            "get_endpoint_health_stats returns platform-wide health rates, optionally filtered by network."
+        ),
+        tags=["get_agent_endpoint_health", "get_endpoint_health_stats"],
+        examples=[
+            "Are the endpoints for agent abc-123 responding?",
+            "Show endpoint health stats for Monad testnet",
+            "What percentage of agents have healthy endpoints?",
+        ],
+    ),
+    AgentSkill(
+        id="owner_portfolio",
+        name="Owner Portfolio",
+        description=(
+            "List all agents registered by a wallet address with a cross-network summary: "
+            "agent count per chain, total reputation, and active endpoint rate."
+        ),
+        tags=["get_owner_portfolio"],
+        examples=[
+            "Show all agents owned by 0x1234...",
+            "What's the portfolio for this wallet?",
+            "How many agents does this address own across all networks?",
+        ],
+    ),
+    AgentSkill(
+        id="platform_analytics",
+        name="Platform Analytics",
+        description=(
+            "Platform-wide statistics and trends. "
+            "get_stats returns total agent and network counts. "
+            "get_registration_trend shows daily registrations over a configurable window. "
+            "get_analytics_overview covers tx stats and per-network breakdowns. "
+            "get_skill_ranking lists the most popular OASF skills by agent count. "
+            "get_recent_activities is the platform-wide activity feed."
+        ),
+        tags=[
+            "get_stats", "get_registration_trend", "get_analytics_overview",
+            "get_skill_ranking", "get_recent_activities",
+        ],
+        examples=[
+            "How many agents are registered in total?",
+            "Show registration trend for the last 90 days",
+            "What are the most popular agent skills on the platform?",
+            "Show the full analytics overview",
+        ],
+    ),
+    AgentSkill(
+        id="network_analytics",
+        name="Network Analytics",
+        description=(
+            "Per-network data across all supported blockchains. "
+            "list_networks and get_network_stats return chain metadata and agent counts. "
+            "get_network_distribution breaks down total, quality, and reputable agents per network."
+        ),
+        tags=["list_networks", "get_network_stats", "get_network_distribution"],
+        examples=[
+            "Which network has the most registered agents?",
+            "List all supported blockchain networks",
+            "Compare quality agent counts across networks",
         ],
     ),
     AgentSkill(
         id="taxonomy",
         name="OASF Taxonomy",
-        description="Explore 136 skills and 204 domains in the OASF classification system and their distribution.",
-        tags=["taxonomy", "oasf", "skills", "domains"],
+        description=(
+            "Explore the OASF classification system. "
+            "list_taxonomy_skills and list_taxonomy_domains return all valid slugs for use in filters. "
+            "get_taxonomy_distribution shows how agents are distributed across skills and domains."
+        ),
+        tags=["get_taxonomy_distribution", "list_taxonomy_skills", "list_taxonomy_domains"],
         examples=[
-            "What skills are available?",
-            "Show taxonomy distribution",
+            "What OASF skill slugs are available?",
+            "Show how agents are distributed across domains",
+            "List all taxonomy domains I can filter by",
         ],
     ),
-    AgentSkill(
-        id="network_intel",
-        name="Network Intelligence",
-        description="Network-level stats, agent distribution, and endpoint health across 21 blockchains.",
-        tags=["networks", "health", "monitoring"],
-        examples=[
-            "Compare agent counts across networks",
-            "Show endpoint health stats for Monad",
-        ],
-    ),
+]
+
+
+# Flat list of MCP tool names derived from skill tags — passed to register()
+# so they appear in the IPFS services array as an MCP endpoint entry.
+MCP_TOOLS: list[str] = [tool for skill in SKILLS for tool in (skill.tags or [])]
+
+# OASF classification slugs for ERC-8004 registration
+OASF_SKILLS: list[str] = [
+    "data_engineering/data_transformation_pipeline",
+    "data_engineering/data_analysis",
+    "information_retrieval/search",
+    "information_retrieval/question_answering",
+]
+
+OASF_DOMAINS: list[str] = [
+    "technology/blockchain",
+    "data_analytics",
+    "finance",
 ]
 
 
@@ -150,11 +250,12 @@ def build_agent_card(settings: Settings) -> AgentCard:
     return AgentCard(
         name="Agentscan Agent",
         description=(
-            "AI agent for deep exploration and analysis of 146,000+ ERC-8004 registered "
-            "AI agents across 21 blockchain networks. Rich search with 12+ filters, "
+            "AI agent for deep exploration and analysis of ERC-8004 registered "
+            "AI agents across multiple blockchain networks. Rich search with combinable filters, "
             "agent deep-dives (reputation, feedbacks, endpoints, transactions), owner "
             "portfolio analysis, platform analytics, leaderboard, and OASF taxonomy. "
-            "Powered by Agentscan. Accepts USDC payment via x402 protocol."
+            "Powered by Agentscan. Tools exposed via MCP protocol. "
+            "Accepts USDC payment via x402 protocol."
         ),
         supported_interfaces=[AgentInterface(url=settings.base_url + "/")],
         version="0.3.0",

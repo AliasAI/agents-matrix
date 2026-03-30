@@ -17,6 +17,7 @@ def build_discovery(
     agent_card: AgentCard,
     pricing: Pricing,
     settings: Settings,
+    mcp_tools: list[str] | None = None,
 ) -> dict:
     """Build a JSON discovery response aggregating capabilities, pricing, and payment."""
     skills = []
@@ -42,6 +43,32 @@ def build_discovery(
                 "spec": "https://a2a-protocol.org",
                 "agent_card": "/.well-known/agent-card.json",
             },
+            **({"mcp": {
+                "spec": "https://modelcontextprotocol.io",
+                "transport": "http",
+                "url": settings.base_url + "/",
+                "tools": mcp_tools,
+                "install": {
+                    "claude_desktop": {
+                        "config_key": "mcpServers",
+                        "entry": {
+                            agent_card.name.lower().replace(" ", "_"): {
+                                "url": settings.base_url + "/",
+                                "transport": "http",
+                            }
+                        },
+                    },
+                    "cursor": {
+                        "config_key": "mcpServers",
+                        "entry": {
+                            agent_card.name.lower().replace(" ", "_"): {
+                                "url": settings.base_url + "/",
+                                "transport": "http",
+                            }
+                        },
+                    },
+                },
+            }} if mcp_tools else {}),
             "x402": {
                 "enabled": x402_enabled,
                 "spec": "https://x402.org",
@@ -93,6 +120,7 @@ def build_llms_txt(
     agent_card: AgentCard,
     pricing: Pricing,
     settings: Settings,
+    mcp_tools: list[str] | None = None,
 ) -> str:
     """Build an llms.txt-style markdown document (llmstxt.org format).
 
@@ -184,10 +212,49 @@ def build_llms_txt(
     lines.append("```")
     lines.append("")
 
+    # ── MCP ──
+    if mcp_tools:
+        lines.append("## MCP (Model Context Protocol)")
+        lines.append("")
+        lines.append(
+            "This agent exposes its tools via the [Model Context Protocol](https://modelcontextprotocol.io) "
+            "(MCP), Anthropic's open standard for connecting AI clients to external tools. "
+            "Any MCP-compatible host (Claude, Cursor, etc.) can invoke these tools directly."
+        )
+        lines.append("")
+        lines.append(f"**Endpoint:** `{settings.base_url}/`  ")
+        lines.append("**Transport:** HTTP (Streamable HTTP)")
+        lines.append("")
+        lines.append("**Available tools:**")
+        lines.append("")
+        for tool in mcp_tools:
+            lines.append(f"- `{tool}`")
+        lines.append("")
+
+        mcp_key = agent_card.name.lower().replace(" ", "_")
+        lines.append("### Installation")
+        lines.append("")
+        lines.append("**Claude Desktop** — add to `claude_desktop_config.json`:")
+        lines.append("```json")
+        lines.append('{')
+        lines.append('  "mcpServers": {')
+        lines.append(f'    "{mcp_key}": {{')
+        lines.append(f'      "url": "{settings.base_url}/",')
+        lines.append('      "transport": "http"')
+        lines.append('    }')
+        lines.append('  }')
+        lines.append('}')
+        lines.append("```")
+        lines.append("")
+        lines.append("**Cursor / Windsurf / other MCP hosts** — same `mcpServers` config block.")
+        lines.append("")
+
     # ── Standards ──
     lines.append("## Standards")
     lines.append("")
     lines.append("- [A2A Protocol](https://a2a-protocol.org) — Agent-to-Agent communication")
+    if mcp_tools:
+        lines.append("- [MCP](https://modelcontextprotocol.io) — Model Context Protocol (tool invocation)")
     lines.append("- [x402](https://x402.org) — HTTP-native payment protocol")
     lines.append("- [ERC-8004](https://eips.ethereum.org/EIPS/eip-8004) — Trustless AI agent registry")
     lines.append("- [llms.txt](https://llmstxt.org) — LLM-friendly documentation standard")

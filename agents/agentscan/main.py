@@ -17,13 +17,11 @@ from starlette.requests import Request
 
 from agents_core.app import create_app, setup_logging
 from agents_core.settings import Pricing, get_settings
-from agent_config import SYSTEM_PROMPT, build_agent_card
+from agent_config import SYSTEM_PROMPT, build_agent_card, MCP_TOOLS
 
 # Agentscan API endpoints exposed as free direct queries (no LLM, no x402).
 _PROXY_ROUTES: list[tuple[str, str]] = [
     ("/api/stats", "/api/stats"),
-    ("/api/stats/network-distribution", "/api/stats/network-distribution"),
-    ("/api/stats/skill-ranking", "/api/stats/skill-ranking"),
     ("/api/stats/registration-trend", "/api/stats/registration-trend"),
     ("/api/networks", "/api/networks"),
     ("/api/networks/stats", "/api/networks/stats"),
@@ -117,6 +115,7 @@ if __name__ == "__main__":
         agent_card=build_agent_card(settings),
         mcp_module="mcp_entry",
         system_prompt=SYSTEM_PROMPT,
+        mcp_tools=MCP_TOOLS,
     )
 
     # Add free direct-query proxy routes (no LLM, no x402)

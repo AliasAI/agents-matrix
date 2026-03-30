@@ -29,6 +29,7 @@ def create_app(
     agent_card: AgentCard,
     mcp_module: str,
     system_prompt: str,
+    mcp_tools: list[str] | None = None,
 ) -> FastAPI:
     """Build the full application stack.
 
@@ -68,8 +69,8 @@ def create_app(
         logger.warning("No wallet address configured — x402 payment gate DISABLED")
 
     # -- Agent-friendly discovery --
-    discovery_data = build_discovery(agent_card, pricing, settings)
-    llms_txt_content = build_llms_txt(agent_card, pricing, settings)
+    discovery_data = build_discovery(agent_card, pricing, settings, mcp_tools=mcp_tools)
+    llms_txt_content = build_llms_txt(agent_card, pricing, settings, mcp_tools=mcp_tools)
 
     @app.get("/discovery")
     async def discovery() -> dict:
@@ -109,6 +110,7 @@ def run_agent(
     system_prompt: str,
     log_name: str,
     pricing_path: Path,
+    mcp_tools: list[str] | None = None,
 ) -> None:
     """Standard entry point for all agents."""
     settings = get_settings()
@@ -120,5 +122,6 @@ def run_agent(
         agent_card=agent_card,
         mcp_module=mcp_module,
         system_prompt=system_prompt,
+        mcp_tools=mcp_tools,
     )
     uvicorn.run(app, host=settings.host, port=settings.port, log_level="info")

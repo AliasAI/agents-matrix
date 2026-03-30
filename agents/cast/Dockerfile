@@ -15,7 +15,8 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 WORKDIR /app
 
-# Clone cast harness from git (sparse checkout — only cast/agent-harness)
+# Clone cast harness (sparse checkout — only cast/agent-harness)
+# NOTE: build context is agents-matrix/ root (set in docker-compose.yml)
 ARG HARNESS_REPO=https://github.com/0xouzm/CLI-Anything.git
 ARG HARNESS_REF=main
 RUN git clone --depth 1 --branch ${HARNESS_REF} --filter=blob:none --sparse \
@@ -24,20 +25,27 @@ RUN git clone --depth 1 --branch ${HARNESS_REF} --filter=blob:none --sparse \
     cp -r cast/agent-harness /app/cast-harness && \
     rm -rf /tmp/cli-anything
 
-# Copy workspace root + framework + this agent
-# NOTE: build context is agents-matrix/ root (set in docker-compose.yml)
+# ── Dependency layer (cached unless pyproject.toml files change) ──
 COPY pyproject.toml /app/pyproject.toml
-COPY framework /app/framework
+COPY framework/pyproject.toml /app/framework/pyproject.toml
+COPY agents/cast/pyproject.toml /app/agents/cast/pyproject.toml
+
+RUN sed -i 's|path = "../../../../CLI-Anything/cast/agent-harness"|path = "/app/cast-harness"|' \
+      /app/agents/cast/pyproject.toml
+
+RUN cd /app && uv lock --prerelease=allow && \
+    uv sync --prerelease=allow --package cast-agent --no-install-workspace
+
+# ── Source layer (only invalidates cache on code changes) ──
+COPY framework/src /app/framework/src
 COPY agents/cast /app/agents/cast
 
-# Rewrite path dependency for Docker context
-RUN sed -i 's|path = "../../../../CLI-Anything/cast/agent-harness"|path = "/app/cast-harness"|' /app/agents/cast/pyproject.toml
-
-# Install dependencies
-RUN cd /app && uv lock --prerelease=allow && uv sync --prerelease=allow --package cast-agent
+RUN sed -i 's|path = "../../../../CLI-Anything/cast/agent-harness"|path = "/app/cast-harness"|' \
+      /app/agents/cast/pyproject.toml && \
+    cd /app && uv sync --prerelease=allow --package cast-agent --frozen
 
 WORKDIR /app/agents/cast
 
 EXPOSE 9000
 
-CMD ["uv", "run", "--package", "cast-agent", "python", "main.py"]
+CMD ["/app/.venv/bin/python", "main.py"]
